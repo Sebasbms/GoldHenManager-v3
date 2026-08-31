@@ -19,29 +19,30 @@ echo -e "${VERDE} \____|\___|_|\__,_|_|  \___|_| |_| ${NC}"
 echo -e "${CYAN}        M A N A G E R   V 3 . 0     ${NC}"
 echo -e "${BLANCO}             [ By SeBaS ]           ${NC}\n"
 
-# 1. Solicitar permisos a Android
+# 1. Solicitar permisos a Android (Única interacción requerida)
 echo -e "${AMARILLO}[*] Abriendo brecha en el sistema (Permisos)...${NC}"
 echo -e "${ROJO}[!] ATENCIÓN: Toca 'PERMITIR' en tu pantalla.${NC}"
 termux-setup-storage
 sleep 4 
 
-# 2. Instalar el motor (SIN upgrade profundo para evitar cortes)
+# 2. Instalar el motor (100% Automático, sin preguntas)
 echo -e "\n${AMARILLO}[*] Inyectando dependencias (PHP, Git, API)...${NC}"
-pkg update -y > /dev/null 2>&1
-pkg install -y git php termux-api > /dev/null 2>&1
+export DEBIAN_FRONTEND=noninteractive
+pkg update -y -o Dpkg::Options::="--force-confold"
+pkg install -y -o Dpkg::Options::="--force-confold" git php termux-api
 
 # 3. Crear carpeta visible en Android
-echo -e "${AMARILLO}[*] Creando estructura de datos en Android...${NC}"
+echo -e "\n${AMARILLO}[*] Creando estructura de datos en Android...${NC}"
 mkdir -p /sdcard/GoldHenManager/user
 
 # 4. Descargar tu código desde GitHub
 REPO_DIR="$HOME/GoldHenManager-v3"
 if [ -d "$REPO_DIR" ]; then
     echo -e "${AMARILLO}[*] Sincronizando con el servidor de SeBaS...${NC}"
-    cd "$REPO_DIR" && git pull > /dev/null 2>&1
+    cd "$REPO_DIR" && git pull
 else
     echo -e "${AMARILLO}[*] Clonando repositorio maestro...${NC}"
-    git clone https://github.com/Sebasbms/GoldHenManager-v3.git "$REPO_DIR" > /dev/null 2>&1
+    git clone https://github.com/Sebasbms/GoldHenManager-v3.git "$REPO_DIR"
 fi
 
 # 5. Crear el puente mágico (Enlace Simbólico)
@@ -118,7 +119,7 @@ if [ -d "$APP_DIR" ]; then
     echo -e "${VERDE} [+] ¡SISTEMA EN LÍNEA! Ejecutando interfaz...${NC}\n"
     echo -e "${CYAN} [i] Escribe 'exit' para apagar el servidor.${NC}\n"
     
-    # Forzar al teléfono a abrir el navegador
+    # Forzar al teléfono a abrir el navegador (Ideal para pantalla de celular)
     termux-open-url "http://localhost:${PUERTO}"
 fi
 EOF
