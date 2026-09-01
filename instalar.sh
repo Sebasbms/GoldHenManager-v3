@@ -107,7 +107,7 @@ if [ -d "$APP_DIR" ]; then
     echo -e "${VERDE} [+] ¡SISTEMA EN LÍNEA! Ejecutando interfaz...${NC}\n"
     echo -e "${CYAN} [i] Escribe 'exit' para apagar el servidor.${NC}\n"
     
-    termux-open-url "http://127.0.0.1:${PUERTO}/index.php"
+    termux-open-url "http://localhost:${PUERTO}/index.php"
 fi
 EOF
 
