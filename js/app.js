@@ -1,11 +1,17 @@
 /**
  * ====================================================================
- * GOLDHEN MANAGER V3.0 🚀 (PS5/PS4) - NÚCLEO DE CONTROL CENTRAL (CORE)
+ * GOLDHEN MANAGER V3.0 🚀 (PS4) - NÚCLEO DE CONTROL CENTRAL (CORE)
  * DEVELOPED By SeBaS - RUTA: js/app.js
  * ====================================================================
  */
 const CREATOR_ATTRIBUTION = "by SeBaS";
 console.log(`%c GOLDHEN MANAGER V3.0 - Developed ${CREATOR_ATTRIBUTION} `, "background: #111827; color: #22d3ee; font-weight: bold; padding: 4px;");
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+}
 
 let globalAppConfig = {
     ipConsola: '192.168.1.28',
@@ -20,7 +26,6 @@ let globalAudioCtx = null;
 
 const introNamesMap = {
     'none': 'Sin Intro (Rápido)',
-    'intro-ps5': 'PlayStation 5',
     'intro-ps4': 'PlayStation 4',
     'intro-glitch': 'Glitch Hacker',
     'intro-ps2': 'PlayStation 2 Clásica',
@@ -66,7 +71,7 @@ function cargarConfiguracionesLocales() {
 
     globalAppConfig.portFTP = parseInt(portGuardado, 10);
 
-    const bgGuardado = localStorage.getItem('ps4_dynamic_bg') || 'bg-ps5';
+    const bgGuardado = localStorage.getItem('ps4_dynamic_bg') || 'bg-ps4';
     if (typeof changeDynamicWallpaper === 'function') {
         setTimeout(() => changeDynamicWallpaper(bgGuardado), 300);
     }
@@ -90,9 +95,9 @@ function inicializarValoresInterfazAjustes() {
 
         const selectWall = document.getElementById('custom-select-label');
         if (selectWall) {
-            const bgNamesMap = { 'none': 'Apagar Fondos', 'bg-ps5': 'System Default (PS5)', 'bg-ps4': 'Olas Líquidas (PS4)', 'bg-ps2': 'Cubos 3D (PS2)', 'bg-matrix': 'Lluvia de Código (Matrix)', 'bg-warp': 'Velocidad Warp (Espacio)', 'bg-plasma': 'Fluido Plasma', 'bg-network': 'Red Neuronal (Network)' };
-            const bgGuardado = localStorage.getItem('ps4_dynamic_bg') || 'bg-ps5';
-            selectWall.innerText = bgNamesMap[bgGuardado] || 'System Default (PS5)';
+            const bgNamesMap = { 'none': 'Apagar Fondos', 'bg-ps4': 'Olas Líquidas (PS4)', 'bg-ps2': 'Cubos 3D (PS2)', 'bg-matrix': 'Lluvia de Código (Matrix)', 'bg-warp': 'Velocidad Warp (Espacio)', 'bg-plasma': 'Fluido Plasma', 'bg-network': 'Red Neuronal (Network)' };
+            const bgGuardado = localStorage.getItem('ps4_dynamic_bg') || 'bg-ps4';
+            selectWall.innerText = bgNamesMap[bgGuardado] || 'Olas Líquidas (PS4)';
         }
 
         const lblIntro = document.getElementById('custom-select-intro-label');
@@ -189,7 +194,7 @@ function seleccionarFondoCustom(idFondo, nombreVisible) {
     emitirEfectoSonidoNativo('ps-ui'); 
     if (typeof changeDynamicWallpaper === 'function') {
         changeDynamicWallpaper(idFondo);
-        ps5Notification("SISTEMA VISUAL", `Fondo dinámico cargado correctamente.`, "fa-desktop");
+        sysNotification("SISTEMA VISUAL", `Fondo dinámico cargado correctamente.`, "fa-desktop");
     }
 }
 
@@ -212,7 +217,7 @@ function seleccionarIntroCustom(idIntro, nombreVisible) {
     toggleCustomSelectIntro();
     localStorage.setItem('ps4_selected_intro', idIntro);
     emitirEfectoSonidoNativo('ps-ui');
-    ps5Notification("AJUSTES", `Intro seleccionada. Se verá al reiniciar la app.`, "fa-play");
+    sysNotification("AJUSTES", `Intro seleccionada. Se verá al reiniciar la app.`, "fa-play");
 }
 
 function configurarEventosDashboard() {
@@ -223,7 +228,7 @@ function configurarEventosDashboard() {
             if (validarEstructuraIP(nuevaIP)) {
                 globalAppConfig.ipConsola = nuevaIP;
                 localStorage.setItem('sebas_ip_final_libre', nuevaIP);
-                ps5Notification("AJUSTES", "Dirección IP actualizada.", "fa-network-wired");
+                sysNotification("AJUSTES", "Dirección IP actualizada.", "fa-network-wired");
                 verificarRadarInicial();
             } else { e.target.value = globalAppConfig.ipConsola; }
         });
@@ -275,14 +280,14 @@ async function conectarIPManualValidando() {
     const ip = inputIP.value.trim();
     const port = inputPort ? inputPort.value.trim() : '2121';
 
-    if (!validarEstructuraIP(ip)) { ps5Notification("ERROR", "IP inválida.", "fa-circle-xmark"); return; }
+    if (!validarEstructuraIP(ip)) { sysNotification("ERROR", "IP inválida.", "fa-circle-xmark"); return; }
 
     localStorage.setItem('sebas_ip_final_libre', ip);
     localStorage.setItem('sebas_port_libre', port);
     globalAppConfig.ipConsola = ip;
     globalAppConfig.portFTP = parseInt(port, 10);
 
-    ps5Notification("ENLACE", "Sincronizando...", "fa-rotate");
+    sysNotification("ENLACE", "Sincronizando...", "fa-rotate");
     await verificarRadarInicial();
 }
 
@@ -312,19 +317,19 @@ function validarEstructuraIP(ipString) {
     return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ipString);
 }
 
-function ps5Notification(titulo, mensaje, iconoClase = "fa-info-circle") {
+function sysNotification(titulo, mensaje, iconoClase = "fa-info-circle") {
     if (!globalAppConfig.alertasActivas) return;
 
-    let contenedorNotificaciones = document.getElementById('ps5-notification-holder');
+    let contenedorNotificaciones = document.getElementById('sys-notification-holder');
     if (!contenedorNotificaciones) {
         contenedorNotificaciones = document.createElement('div');
-        contenedorNotificaciones.id = 'ps5-notification-holder';
+        contenedorNotificaciones.id = 'sys-notification-holder';
         contenedorNotificaciones.className = "fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none";
         document.body.appendChild(contenedorNotificaciones);
     }
 
     const burbuja = document.createElement('div');
-    burbuja.className = "ps5-toast-pill flex items-center gap-3 p-3 bg-[#0d1321]/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] pointer-events-auto transform translate-x-full transition-all duration-400 cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+    burbuja.className = "sys-toast-pill flex items-center gap-3 p-3 bg-[#0d1321]/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] pointer-events-auto transform translate-x-full transition-all duration-400 cubic-bezier(0.175, 0.885, 0.32, 1.275)";
     burbuja.style.maxHeight = "65px";
 
     burbuja.innerHTML = `
@@ -421,7 +426,7 @@ function abortarYEstabilizarRadar() {
     }
 }
 
-window.ps5Notification = ps5Notification;
+window.sysNotification = sysNotification;
 window.abrirModulo = abrirModulo;
 window.volverAlLauncher = volverAlLauncher;
 
@@ -456,7 +461,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', () => {
     const btn = document.getElementById('btn-pwa-install');
     if (btn) btn.remove();
-    if (typeof ps5Notification === 'function') {
-        ps5Notification("SISTEMA", "¡Instalación completada! Abre la app desde tu cajón de aplicaciones.", "fa-check");
+    if (typeof sysNotification === 'function') {
+        sysNotification("SISTEMA", "¡Instalación completada! Abre la app desde tu cajón de aplicaciones.", "fa-check");
     }
 });
