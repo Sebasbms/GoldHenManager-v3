@@ -9,7 +9,7 @@ console.log(`%c GOLDHEN MANAGER V3.0 - Developed ${CREATOR_ATTRIBUTION} `, "back
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
 }
 
@@ -465,3 +465,4 @@ window.addEventListener('appinstalled', () => {
         sysNotification("SISTEMA", "¡Instalación completada! Abre la app desde tu cajón de aplicaciones.", "fa-check");
     }
 });
+
