@@ -4,7 +4,6 @@
  * DEVELOPED By SeBaS - RUTA: js/app.js
  * ====================================================================
  */
-
 const CREATOR_ATTRIBUTION = "by SeBaS";
 console.log(`%c GOLDHEN MANAGER V3.0 - Developed ${CREATOR_ATTRIBUTION} `, "background: #111827; color: #22d3ee; font-weight: bold; padding: 4px;");
 
@@ -41,7 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
     verificarRadarInicial();
     inicializarValoresInterfazAjustes();
 
-    // 🔥 EJECUCIÓN DEL MOTOR DE INTRO AL ARRANCAR
     if (typeof bootSelectedIntro === 'function') {
         bootSelectedIntro();
     } else {
@@ -90,7 +88,6 @@ function inicializarValoresInterfazAjustes() {
             lblVol.innerText = valPorcentaje + '%';
         }
 
-        // Recuperar etiqueta de Wallpaper
         const selectWall = document.getElementById('custom-select-label');
         if (selectWall) {
             const bgNamesMap = { 'none': 'Apagar Fondos', 'bg-ps5': 'System Default (PS5)', 'bg-ps4': 'Olas Líquidas (PS4)', 'bg-ps2': 'Cubos 3D (PS2)', 'bg-matrix': 'Lluvia de Código (Matrix)', 'bg-warp': 'Velocidad Warp (Espacio)', 'bg-plasma': 'Fluido Plasma', 'bg-network': 'Red Neuronal (Network)' };
@@ -98,7 +95,6 @@ function inicializarValoresInterfazAjustes() {
             selectWall.innerText = bgNamesMap[bgGuardado] || 'System Default (PS5)';
         }
 
-        // Recuperar etiqueta de la Intro
         const lblIntro = document.getElementById('custom-select-intro-label');
         if (lblIntro) {
             const introGuardada = localStorage.getItem('ps4_selected_intro') || 'none';
@@ -173,9 +169,6 @@ function guardarAjustesSonidos(element) {
     if(element.checked) emitirEfectoSonidoNativo('click');
 }
 
-// ==========================================
-// DROPDOWNS CUSTOM
-// ==========================================
 function toggleCustomSelect() {
     emitirEfectoSonidoNativo('click');
     const options = document.getElementById('custom-select-options');
@@ -200,7 +193,6 @@ function seleccionarFondoCustom(idFondo, nombreVisible) {
     }
 }
 
-// Lógica para Intros
 function toggleCustomSelectIntro() {
     emitirEfectoSonidoNativo('click');
     const options = document.getElementById('custom-select-intro-options');
@@ -223,9 +215,6 @@ function seleccionarIntroCustom(idIntro, nombreVisible) {
     ps5Notification("AJUSTES", `Intro seleccionada. Se verá al reiniciar la app.`, "fa-play");
 }
 
-// ==========================================
-// NAVEGACIÓN Y EVENTOS CORE
-// ==========================================
 function configurarEventosDashboard() {
     const inputIP = document.getElementById('ps-ip-full-input');
     if (inputIP) {
@@ -435,3 +424,39 @@ function abortarYEstabilizarRadar() {
 window.ps5Notification = ps5Notification;
 window.abrirModulo = abrirModulo;
 window.volverAlLauncher = volverAlLauncher;
+
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    if (!document.getElementById('btn-pwa-install')) {
+        const btn = document.createElement('button');
+        btn.id = 'btn-pwa-install';
+        
+        btn.className = "fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[9999] bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black tracking-widest text-[11px] uppercase px-6 py-4 rounded-full shadow-[0_10px_30px_rgba(6,182,212,0.6)] flex items-center gap-3 animate-bounce active:scale-95 transition-all";
+        btn.innerHTML = `<i class="fa-solid fa-download text-lg"></i> Instalar App en el Celular`;
+        
+        btn.onclick = async () => {
+            btn.style.display = 'none';
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                btn.remove(); 
+            } else {
+                btn.style.display = 'flex'; 
+            }
+            deferredPrompt = null;
+        };
+        document.body.appendChild(btn);
+    }
+});
+
+window.addEventListener('appinstalled', () => {
+    const btn = document.getElementById('btn-pwa-install');
+    if (btn) btn.remove();
+    if (typeof ps5Notification === 'function') {
+        ps5Notification("SISTEMA", "¡Instalación completada! Abre la app desde tu cajón de aplicaciones.", "fa-check");
+    }
+});
