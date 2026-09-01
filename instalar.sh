@@ -1,8 +1,10 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-# ==========================================
-# COLORES ESTILO HACKER
-# ==========================================
+# ====================================================================
+# GOLDHEN MANAGER V3.0 🚀 (PS4) - SCRIPT DE INSTALACIÓN TERMUX
+# DEVELOPED By SeBaS
+# ====================================================================
+
 VERDE='\033[1;32m'
 CYAN='\033[1;36m'
 AMARILLO='\033[1;33m'
@@ -19,23 +21,19 @@ echo -e "${VERDE} \____|\___|_|\__,_|_|  \___|_| |_| ${NC}"
 echo -e "${CYAN}        M A N A G E R   V 3 . 0     ${NC}"
 echo -e "${BLANCO}             [ By SeBaS ]           ${NC}\n"
 
-# 1. Solicitar permisos a Android (Única interacción requerida)
 echo -e "${AMARILLO}[*] Abriendo brecha en el sistema (Permisos)...${NC}"
 echo -e "${ROJO}[!] ATENCIÓN: Toca 'PERMITIR' en tu pantalla.${NC}"
 termux-setup-storage
 sleep 4 
 
-# 2. Instalar el motor (100% Automático, sin preguntas)
 echo -e "\n${AMARILLO}[*] Inyectando dependencias (PHP, Git, API)...${NC}"
 export DEBIAN_FRONTEND=noninteractive
 pkg update -y -o Dpkg::Options::="--force-confold"
 pkg install -y -o Dpkg::Options::="--force-confold" git php termux-api
 
-# 3. Crear carpeta visible en Android
 echo -e "\n${AMARILLO}[*] Creando estructura de datos en Android...${NC}"
 mkdir -p /sdcard/GoldHenManager/user
 
-# 4. Descargar tu código desde GitHub
 REPO_DIR="$HOME/GoldHenManager-v3"
 if [ -d "$REPO_DIR" ]; then
     echo -e "${AMARILLO}[*] Sincronizando con el servidor de SeBaS...${NC}"
@@ -45,12 +43,10 @@ else
     git clone https://github.com/Sebasbms/GoldHenManager-v3.git "$REPO_DIR"
 fi
 
-# 5. Crear el puente mágico (Enlace Simbólico)
 echo -e "${AMARILLO}[*] Estableciendo túnel de archivos (Symlink)...${NC}"
 rm -rf "$REPO_DIR/user" 2>/dev/null
 ln -s /sdcard/GoldHenManager/user "$REPO_DIR/user"
 
-# 6. Grabar el script de arranque visual y servidor en Termux
 echo -e "${AMARILLO}[*] Sobrescribiendo terminal de arranque...${NC}"
 cat << 'EOF' > $HOME/.bashrc
 VERDE='\033[1;32m'
@@ -59,7 +55,6 @@ AMARILLO='\033[1;33m'
 BLANCO='\033[1;37m'
 NC='\033[0m'
 
-# Función para redibujar el logo (Efecto animación)
 imprimir_logo() {
     clear
     echo -e "${VERDE}  ____      _    _  _               ${NC}"
@@ -71,7 +66,6 @@ imprimir_logo() {
     echo -e "${BLANCO}             [ By SeBaS ]           ${NC}\n"
 }
 
-# Matar procesos de servidor anteriores
 pkill -f "php -S" > /dev/null 2>&1
 
 APP_DIR="$HOME/GoldHenManager-v3"
@@ -80,12 +74,8 @@ PUERTO=8080
 if [ -d "$APP_DIR" ]; then
     cd "$APP_DIR"
     
-    # Arrancamos PHP silenciosamente de fondo
     PHP_CLI_SERVER_WORKERS=5 php -S 0.0.0.0:${PUERTO} > /dev/null 2>&1 &
     
-    # --- ANIMACIÓN DE CUENTA REGRESIVA CON NÚMEROS GIGANTES ---
-    
-    # Número 3
     imprimir_logo
     echo -e "${AMARILLO} [+] Conexión establecida. Iniciando entorno...${NC}\n"
     echo -e "${CYAN}           ████████   ${NC}"
@@ -95,7 +85,6 @@ if [ -d "$APP_DIR" ]; then
     echo -e "${CYAN}           ████████   ${NC}\n"
     sleep 1
 
-    # Número 2
     imprimir_logo
     echo -e "${AMARILLO} [+] Conexión establecida. Iniciando entorno...${NC}\n"
     echo -e "${CYAN}           ████████   ${NC}"
@@ -105,7 +94,6 @@ if [ -d "$APP_DIR" ]; then
     echo -e "${CYAN}           ████████   ${NC}\n"
     sleep 1
 
-    # Número 1
     imprimir_logo
     echo -e "${AMARILLO} [+] Conexión establecida. Iniciando entorno...${NC}\n"
     echo -e "${CYAN}             ████     ${NC}"
@@ -119,12 +107,10 @@ if [ -d "$APP_DIR" ]; then
     echo -e "${VERDE} [+] ¡SISTEMA EN LÍNEA! Ejecutando interfaz...${NC}\n"
     echo -e "${CYAN} [i] Escribe 'exit' para apagar el servidor.${NC}\n"
     
-    # Forzar al teléfono a abrir el navegador (Ideal para pantalla de celular)
-    termux-open-url "http://localhost:${PUERTO}"
+    termux-open-url "http://127.0.0.1:${PUERTO}/index.php"
 fi
 EOF
 
-# 7. Finalizar
 echo -e "\n${VERDE}=================================================${NC}"
 echo -e "${VERDE}  ¡INSTALACIÓN COMPLETADA!                       ${NC}"
 echo -e "${VERDE}=================================================${NC}"
