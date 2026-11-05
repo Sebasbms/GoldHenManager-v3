@@ -1,0 +1,327 @@
+<?php
+/**
+ * ====================================================================
+ * GOLDHENMANAGER 🚀 - DEVELOPED By SeBaS - RUTA: api/explorador_api.php
+ * ====================================================================
+ */
+error_reporting(0);
+ini_set('display_errors', 0);
+set_time_limit(0);
+
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+$host_ip = $_POST['host_ip'] ?? $_GET['host_ip'] ?? '';
+$port = 2121;
+
+if (!in_array($action, ['descargar_directo', 'download_file'], true)) {
+    header('Content-Type: application/json; charset=utf-8');
+}
+
+if (!$host_ip) {
+    echo json_encode(['status' => 'error', 'message' => 'Falta la IP de la consola.']);
+    exit;
+}
+
+function enviar_comando_raw_ftp($host, $port, $comandos) {
+    $ch = curl_init("ftp://$host:$port/");
+    $res = false;
+    if ($ch) {
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_QUOTE, $comandos);
+        $res = curl_exec($ch);
+        curl_close($ch);
+    }
+    return $res;
+}
+
+function ruta_ftp_segura($path) {
+    $path = str_replace('\\', '/', trim((string)$path));
+    if ($path === '' || $path[0] !== '/' || str_contains($path, "\0") || preg_match('/[\r\n]/', $path)) return false;
+    $parts = explode('/', $path);
+    foreach ($parts as $part) if ($part === '.' || $part === '..') return false;
+    return '/' . implode('/', array_filter($parts, fn($part) => $part !== ''));
+}
+
+function archivo_texto_permitido($path) {
+    return (bool)preg_match('/\.(ini|cfg|conf|json|xml|txt|log|csv|yml|yaml|properties)$/i', (string)$path);
+}
+
+function url_ftp_archivo($host, $port, $path) {
+    return "ftp://$host:$port" . implode('/', array_map('rawurlencode', explode('/', $path)));
+}
+
+function borrar_recursivo_ftp($host_ip, $port, $path) {
+    $ch = curl_init();
+    $url_path = implode('/', array_map('rawurlencode', explode('/', trim($path, '/'))));
+    curl_setopt($ch, CURLOPT_URL, "ftp://$host_ip:$port/$url_path/");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "LIST");
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    $res = curl_exec($ch);
+    curl_close($ch);
+
+    if ($res) {
+        $lines = explode("\n", trim($res));
+        foreach ($lines as $line) {
+            if (empty(trim($line))) continue;
+            $parts = preg_split('/\s+/', trim($line), 9);
+            if (count($parts) >= 9) {
+                $name = trim($parts[8]);
+                if ($name === '.' || $name === '..') continue;
+                
+                $is_dir = (substr($parts[0], 0, 1) === 'd');
+                $item_path = rtrim($path, '/') . '/' . $name;
+                
+                if ($is_dir) {
+                    borrar_recursivo_ftp($host_ip, $port, $item_path);
+                } else {
+                    enviar_comando_raw_ftp($host_ip, $port, ["DELE $item_path"]);
+                }
+            }
+        }
+    }
+    enviar_comando_raw_ftp($host_ip, $port, ["RMD " . rtrim($path, '/')]);
+}
+
+if ($action === 'get_file_size') {
+    $file_path = $_POST['file_path'] ?? '';
+    $url_path = implode('/', array_map('rawurlencode', explode('/', trim($file_path, '/'))));
+    
+    $ch = curl_init("ftp://$host_ip:$port/$url_path");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_NOBODY, true);
+    curl_setopt($ch, CURLOPT_HEADER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    $res = curl_exec($ch);
+    
+    $size = 0;
+    if ($res !== false) {
+        $size = curl_getinfo($ch, CURLINFO_CONTENT_LENGTH_DOWNLOAD);
+        if ($size < 0) $size = 0;
+    }
+    curl_close($ch);
+    
+    echo json_encode(['status' => 'success', 'size' => (int)$size]);
+    exit;
+}
+
+if ($action === 'listar_directorio') {
+    $path = $_POST['path'] ?? '/';
+    if (substr($path, -1) !== '/') $path .= '/';
+
+    $url_path = trim($path, '/');
+    $partes = $url_path === '' ? [] : explode('/', $url_path);
+    $partes_cod = array_map('rawurlencode', $partes);
+    $final_path = implode('/', $partes_cod);
+    
+    $ftp_url = "ftp://$host_ip:$port/" . ($final_path !== '' ? $final_path . '/' : '');
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $ftp_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "LIST");
+    curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+    $res = curl_exec($ch);
+    curl_close($ch);
+
+    $carpetas = [];
+    $archivos = [];
+
+    if ($res) {
+        $lines = explode("\n", trim($res));
+        foreach ($lines as $line) {
+            if (empty(trim($line))) continue;
+            $parts = preg_split('/\s+/', trim($line), 9);
+            if (count($parts) >= 9) {
+                $name = trim($parts[8]);
+                if ($name === '.' || $name === '..') continue;
+
+                $is_dir = (substr($parts[0], 0, 1) === 'd');
+                $size = (int)$parts[4];
+                $date = $parts[5] . ' ' . $parts[6] . ' ' . $parts[7];
+
+                $item = ['name' => $name, 'size' => $size, 'date' => $date];
+
+                if ($is_dir) $carpetas[] = $item;
+                else $archivos[] = $item;
+            }
+        }
+        usort($carpetas, function($a, $b){ return strcasecmp($a['name'], $b['name']); });
+        usort($archivos, function($a, $b){ return strcasecmp($a['name'], $b['name']); });
+    }
+
+    echo json_encode([
+        'status' => 'success',
+        'current_path' => $path,
+        'data' => ['carpetas' => $carpetas, 'archivos' => $archivos]
+    ]);
+    exit;
+}
+
+if ($action === 'upload_explorer_chunk') {
+    $filename = $_POST['filename'] ?? '';
+    $target_dir = rtrim($_POST['target_dir'] ?? '/', '/');
+    $chunk_index = (int)($_POST['chunk_index'] ?? 0);
+    $is_folder_upload = ($_POST['is_folder_upload'] ?? 'false') === 'true';
+    $relative_path = $_POST['relative_path'] ?? '';
+
+    if (!$filename || !isset($_FILES['file_chunk'])) {
+        echo json_encode(['status' => 'error', 'message' => 'Lote incompleto.']);
+        exit;
+    }
+
+    $tmp_file = $_FILES['file_chunk']['tmp_name'];
+    
+    $remote_path = $target_dir . '/' . rawurlencode($filename);
+    
+    if ($is_folder_upload && !empty($relative_path)) {
+        $path_parts = explode('/', str_replace('\\', '/', $relative_path));
+        $clean_parts = array_map('rawurlencode', $path_parts);
+        $remote_path = $target_dir . '/' . implode('/', $clean_parts);
+    }
+    
+    $fp = fopen($tmp_file, 'r');
+    $ch = curl_init("ftp://$host_ip:$port$remote_path");
+
+    if ($chunk_index > 0) { curl_setopt($ch, CURLOPT_FTPAPPEND, true); }
+    curl_setopt($ch, CURLOPT_UPLOAD, 1);
+    curl_setopt($ch, CURLOPT_INFILE, $fp);
+    curl_setopt($ch, CURLOPT_INFILESIZE, filesize($tmp_file));
+    curl_setopt($ch, CURLOPT_FTP_CREATE_MISSING_DIRS, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+
+    $res = curl_exec($ch);
+    curl_close($ch);
+    fclose($fp);
+
+    if (!$res) {
+        echo json_encode(['status' => 'error', 'message' => 'Error inyección fragmento.']);
+        exit;
+    }
+
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+
+if ($action === 'crear_carpeta') {
+    $target = $_POST['target'] ?? '';
+    $res = enviar_comando_raw_ftp($host_ip, $port, ["MKD $target"]);
+    echo json_encode(['status' => $res ? 'success' : 'error']);
+    exit;
+}
+
+if ($action === 'crear_archivo') {
+    $target = $_POST['target'] ?? '';
+    $ch = curl_init("ftp://$host_ip:$port$target");
+    curl_setopt($ch, CURLOPT_UPLOAD, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, "");
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    $res = curl_exec($ch);
+    curl_close($ch);
+    echo json_encode(['status' => $res ? 'success' : 'error']);
+    exit;
+}
+
+if ($action === 'eliminar') {
+    $target = $_POST['target'] ?? '';
+    $is_dir = ($_POST['is_dir'] ?? '') === 'true';
+    if ($is_dir) {
+        borrar_recursivo_ftp($host_ip, $port, $target);
+        echo json_encode(['status' => 'success']);
+    } else {
+        $res = enviar_comando_raw_ftp($host_ip, $port, ["DELE $target"]);
+        echo json_encode(['status' => $res !== false ? 'success' : 'error']);
+    }
+    exit;
+}
+
+if ($action === 'renombrar_mover') {
+    $old = $_POST['old_path'] ?? '';
+    $new = $_POST['new_path'] ?? '';
+    $res = enviar_comando_raw_ftp($host_ip, $port, ["RNFR $old", "RNTO $new"]);
+    echo json_encode(['status' => $res ? 'success' : 'error']);
+    exit;
+}
+
+if ($action === 'copiar') {
+    $source = $_POST['source_path'] ?? '';
+    $dest = $_POST['dest_path'] ?? '';
+    
+    try {
+        $local_tmp = sys_get_temp_dir() . '/' . uniqid() . '.tmp';
+        
+        $fp = fopen($local_tmp, 'w+');
+        $source_url = "ftp://$host_ip:$port" . implode('/', array_map('rawurlencode', explode('/', $source)));
+        $ch = curl_init($source_url);
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 300);
+        $res = curl_exec($ch);
+        $err = curl_error($ch);
+        curl_close($ch);
+        fclose($fp);
+
+        if (!$res || !file_exists($local_tmp) || filesize($local_tmp) === 0) {
+            @unlink($local_tmp);
+            throw new Exception("No se pudo leer el archivo original: $err");
+        }
+
+        $fp = fopen($local_tmp, 'r');
+        $dest_url = "ftp://$host_ip:$port" . implode('/', array_map('rawurlencode', explode('/', $dest)));
+        $ch = curl_init($dest_url);
+        curl_setopt($ch, CURLOPT_UPLOAD, 1);
+        curl_setopt($ch, CURLOPT_INFILE, $fp);
+        curl_setopt($ch, CURLOPT_INFILESIZE, filesize($local_tmp));
+        curl_setopt($ch, CURLOPT_FTP_CREATE_MISSING_DIRS, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 300);
+        $res_up = curl_exec($ch);
+        $err_up = curl_error($ch);
+        curl_close($ch);
+        fclose($fp);
+        
+        @unlink($local_tmp); 
+
+        if (!$res_up) throw new Exception("Error al escribir el archivo destino: $err_up");
+
+        echo json_encode(['status' => 'success']);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'read_text_file') {
+    $path = ruta_ftp_segura($_POST['path'] ?? '');
+    if (!$path || !archivo_texto_permitido($path)) { echo json_encode(['status'=>'error','message'=>'Solo se pueden abrir archivos de texto permitidos.']); exit; }
+    $ch = curl_init(url_ftp_archivo($host_ip, $port, $path));
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_TIMEOUT=>25, CURLOPT_FAILONERROR=>true]);
+    $content = curl_exec($ch); $error = curl_error($ch); curl_close($ch);
+    if ($content === false || strlen($content) > 1048576) { echo json_encode(['status'=>'error','message'=>$content === false ? "No se pudo leer el archivo: $error" : 'El editor admite archivos de hasta 1 MB.']); exit; }
+    if (!preg_match('//u', $content)) { echo json_encode(['status'=>'error','message'=>'El archivo no parece ser texto UTF-8 editable.']); exit; }
+    echo json_encode(['status'=>'success','content'=>$content]); exit;
+}
+
+if ($action === 'write_text_file') {
+    $path = ruta_ftp_segura($_POST['path'] ?? ''); $content = (string)($_POST['content'] ?? '');
+    if (!$path || !archivo_texto_permitido($path)) { echo json_encode(['status'=>'error','message'=>'Ruta o tipo de archivo no permitido.']); exit; }
+    if (strlen($content) > 1048576 || !preg_match('//u', $content)) { echo json_encode(['status'=>'error','message'=>'El contenido debe ser UTF-8 y no superar 1 MB.']); exit; }
+    $stream = fopen('php://temp', 'r+'); fwrite($stream, $content); rewind($stream);
+    $ch = curl_init(url_ftp_archivo($host_ip, $port, $path));
+    curl_setopt_array($ch, [CURLOPT_UPLOAD=>true, CURLOPT_INFILE=>$stream, CURLOPT_INFILESIZE=>strlen($content), CURLOPT_TIMEOUT=>60]);
+    $ok = curl_exec($ch); $error = curl_error($ch); curl_close($ch); fclose($stream);
+    echo json_encode($ok ? ['status'=>'success'] : ['status'=>'error','message'=>"No se pudo guardar: $error"]); exit;
+}
+
+if ($action === 'descargar_directo' || $action === 'download_file') {
+    $path = ruta_ftp_segura($_GET['path'] ?? '');
+    if (!$path) { http_response_code(400); exit; }
+    $filename = str_replace(['"', "\r", "\n"], '', basename($path));
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Type: application/octet-stream');
+    header('X-Content-Type-Options: nosniff');
+    $ch = curl_init(url_ftp_archivo($host_ip, $port, $path));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 0);
+    curl_exec($ch);
+    curl_close($ch);
+    exit;
+}
+?>
