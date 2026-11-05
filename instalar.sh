@@ -1,8 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
 # ====================================================================
-# GOLDHEN MANAGER V3.0 🚀 (PS4) - SCRIPT DE INSTALACIÓN TERMUX
-# DEVELOPED By SeBaS
+# GOLDHEN MANAGER 🚀 (PS4) - DEVELOPED By SeBaS
 # ====================================================================
 
 VERDE='\033[1;32m'
@@ -18,7 +17,7 @@ echo -e "${VERDE} / ___| ___| |__| || |___ _ __      ${NC}"
 echo -e "${VERDE}| |  _ / _ \ |/ _\` | '__/ _ \ '_ \  ${NC}"
 echo -e "${VERDE}| |_| |  __/ | (_| | | |  __/ | | | ${NC}"
 echo -e "${VERDE} \____|\___|_|\__,_|_|  \___|_| |_| ${NC}"
-echo -e "${CYAN}        M A N A G E R   V 3 . 0     ${NC}"
+echo -e "${CYAN}        M A N A G E R        ${NC}"
 echo -e "${BLANCO}             [ By SeBaS ]           ${NC}\n"
 
 echo -e "${AMARILLO}[*] Abriendo brecha en el sistema (Permisos)...${NC}"
@@ -26,10 +25,10 @@ echo -e "${ROJO}[!] ATENCIÓN: Toca 'PERMITIR' en tu pantalla.${NC}"
 termux-setup-storage
 sleep 4 
 
-echo -e "\n${AMARILLO}[*] Inyectando dependencias (PHP, Git, API)...${NC}"
+echo -e "\n${AMARILLO}[*] Inyectando dependencias (PHP, Git, API, ZIP, RAR)...${NC}"
 export DEBIAN_FRONTEND=noninteractive
 pkg update -y -o Dpkg::Options::="--force-confold"
-pkg install -y -o Dpkg::Options::="--force-confold" git php termux-api
+pkg install -y -o Dpkg::Options::="--force-confold" git php termux-api unzip unrar
 
 echo -e "\n${AMARILLO}[*] Creando estructura de datos en Android...${NC}"
 mkdir -p /sdcard/GoldHenManager/user
@@ -62,7 +61,7 @@ imprimir_logo() {
     echo -e "${VERDE}| |  _ / _ \ |/ _\` | '__/ _ \ '_ \  ${NC}"
     echo -e "${VERDE}| |_| |  __/ | (_| | | |  __/ | | | ${NC}"
     echo -e "${VERDE} \____|\___|_|\__,_|_|  \___|_| |_| ${NC}"
-    echo -e "${CYAN}        M A N A G E R   V 3 . 0     ${NC}"
+    echo -e "${CYAN}        M A N A G E R       ${NC}"
     echo -e "${BLANCO}             [ By SeBaS ]           ${NC}\n"
 }
 
