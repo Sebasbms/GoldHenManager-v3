@@ -3,7 +3,7 @@
  * GOLDHENMANAGER 🚀 - DEVELOPED By SeBaS - RUTA: js/biblioteca.js
  * ====================================================================
  */
-window.DEFAULT_COVER_IMG = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 560%22%3E%3Crect width=%22400%22 height=%22560%22 fill=%22%230a0f1a%22/%3E%3Crect x=%2220%22 y=%2220%22 width=%22360%22 height=%22520%22 rx=%2220%22 fill=%22none%22 stroke=%22%231e293b%22 stroke-width=%224%22 stroke-dasharray=%2210,10%22/%3E%3Cpath d=%22M100,260 C100,200 130,180 180,180 L220,180 C270,180 300,200 300,260 L300,320 C300,380 260,380 240,340 L160,340 C140,380 100,380 100,320 Z%22 fill=%22%23111827%22 stroke=%22%23334155%22 stroke-width=%224%22/%3E%3Ccircle cx=%22140%22 cy=%22250%22 r=%2214%22 fill=%22%23334155%22/%3E%3Ccircle cx=%22140%22 cy=%22290%22 r=%2214%22 fill=%22%23334155%22/%3E%3Ccircle cx=%22120%22 cy=%22270%22 r=%2214%22 fill=%22%23334155%22/%3E%3Ccircle cx=%22160%22 cy=%22270%22 r=%2214%22 fill=%22%23334155%22/%3E%3Ccircle cx=%22260%22 cy=%22250%22 r=%2210%22 fill=%22%23a855f7%22/%3E%3Ccircle cx=%22260%22 cy=%22290%22 r=%2210%22 fill=%22%2310b981%22/%3E%3Ccircle cx=%22240%22 cy=%22270%22 r=%2210%22 fill=%22%23ec4899%22/%3E%3Ccircle cx=%22280%22 cy=%22270%22 r=%2210%22 fill=%22%23f59e0b%22/%3E%3Ctext x=%22200%22 y=%22430%22 font-family=%22sans-serif%22 font-size=%2224%22 font-weight=%22900%22 fill=%22%23334155%22 text-anchor=%22middle%22 letter-spacing=%224%22%3EPS4 TITLE%3C/text%3E%3C/svg%3E";
+window.DEFAULT_COVER_IMG = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 560%22%3E%3Crect width=%22400%22 height=%22560%22 fill=%22%230a0f1a%22/%3E%3Crect x=%2220%22 y=%2220%22 width=%22360%22 height=%22520%22 rx=%2220%22 fill=%22none%22 stroke=%22%231e293b%22 stroke-width=%224%22 stroke-dasharray=%2210,10%22/%3E%3Cpath d=%22M100,260 C100,200 130,180 180,180 L220,180 C270,180 300,260 L300,320 C300,380 260,380 240,340 L160,340 C140,380 100,380 100,320 Z%22 fill=%22%23111827%22 stroke=%22%23334155%22 stroke-width=%224%22/%3E%3Ccircle cx=%22140%22 cy=%22250%22 r=%2214%22 fill=%22%23334155%22/%3E%3Ccircle cx=%22140%22 cy=%22290%22 r=%2214%22 fill=%22%23334155%22/%3E%3Ccircle cx=%22120%22 cy=%22270%22 r=%2214%22 fill=%22%23334155%22/%3E%3Ccircle cx=%22160%22 cy=%22270%22 r=%2214%22 fill=%22%23334155%22/%3E%3Ccircle cx=%22260%22 cy=%22250%22 r=%2210%22 fill=%22%23a855f7%22/%3E%3Ccircle cx=%22260%22 cy=%22290%22 r=%2210%22 fill=%22%2310b981%22/%3E%3Ccircle cx=%22240%22 cy=%22270%22 r=%2210%22 fill=%22%23ec4899%22/%3E%3Ccircle cx=%22280%22 cy=%22270%22 r=%2210%22 fill=%22%23f59e0b%22/%3E%3Ctext x=%22200%22 y=%22430%22 font-family=%22sans-serif%22 font-size=%2224%22 font-weight=%22900%22 fill=%22%23334155%22 text-anchor=%22middle%22 letter-spacing=%224%22%3EPS4 TITLE%3C/text%3E%3C/svg%3E";
 
 let catalogoActual = { juegos: [], carpetas: [], ocultos: [], sistema: [] };
 let vistaModo = 'grid'; 
@@ -72,7 +72,7 @@ function initBiblio() {
                 actualizarInterfazFiltros();
                 
                 if (typeof window.aplicarTemaBiblioteca === 'function') window.aplicarTemaBiblioteca();
-                sincronizarCatalogoSilencioso(); 
+                window.sincronizarCatalogoSilencioso(); 
             } else if (!currentIsActive) {
                 window.biblioWasActive = false;
             }
@@ -85,7 +85,7 @@ function initBiblio() {
             filtroActivo = 'MENU';
             actualizarInterfazFiltros();
             if (typeof window.aplicarTemaBiblioteca === 'function') window.aplicarTemaBiblioteca();
-            sincronizarCatalogoSilencioso(); 
+            window.sincronizarCatalogoSilencioso(); 
         }
     }
     setupCustomVideoPlayer();
@@ -94,8 +94,8 @@ function initBiblio() {
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initBiblio); } 
 else { initBiblio(); }
 
-async function sincronizarCatalogoSilencioso() {
-    if (isSyncing) return;
+window.sincronizarCatalogoSilencioso = async function() {
+    if (isSyncing) return false;
     isSyncing = true;
     const ip = localStorage.getItem('sebas_ip_final_libre') || '192.168.1.28';
     const port = localStorage.getItem('sebas_port_libre') || '2121';
@@ -130,17 +130,20 @@ async function sincronizarCatalogoSilencioso() {
             recompilarTodo();
             
             if (json.queue && json.queue.length > 0) {
+                // Procesar iconos pesados en segundo plano sin bloquear el hilo
                 procesarColaIconos(json.queue, ip, port);
             }
+            isSyncing = false;
+            return true; // Terminó la lectura de textos DB
         } else {
             if (badgeText) badgeText.innerText = `Error DB`;
         }
     } catch (e) {
         if (badgeText) badgeText.innerText = `Desconectado`;
-    } finally {
-        isSyncing = false;
     }
-}
+    isSyncing = false;
+    return false;
+};
 
 async function procesarColaIconos(queue, ip, port) {
     const chunkSize = 10;
@@ -362,7 +365,6 @@ function renderizarGridDOM(visibles) {
     });
 }
 
-// Vinculación segura de clics
 window.seleccionarTarjeta3D = function(domIdx) {
     const visibles = obtenerVisiblesFiltrados();
     const searchInput = document.getElementById('engine-search');
@@ -416,7 +418,6 @@ function construirCoverflowDOMEstatico(visibles) {
     
     let html3D = "";
     
-    // Función para calcular estilos iniciales y evitar el salto visual
     const getInitialStyle = (idx) => {
         let offset = idx - index3DActivo;
         if (offset < -Math.floor(totalCards / 2)) { offset += totalCards; } 
@@ -545,7 +546,6 @@ function actualizarCoverflow3DStyles() {
                     tCusa.innerHTML = textHtml;
                 }
                 
-                // Exterminador de los puntitos residuales solucionado
                 if (tCusa.parentElement) {
                     const els = tCusa.parentElement.querySelectorAll('span, div, p');
                     els.forEach(el => {
@@ -611,7 +611,7 @@ function configurarRastreadorSwipe() {
             isDragging = false; 
         }
     }, { passive: true });
-    newViewPort.addEventListener('touchend', () => { isDragging = false; });
+    viewPort.addEventListener('touchend', () => { isDragging = false; });
 }
 
 function alternarColumnasGrid() {
