@@ -25,10 +25,10 @@ echo -e "${ROJO}[!] ATENCIÓN: Toca 'PERMITIR' en tu pantalla.${NC}"
 termux-setup-storage
 sleep 4 
 
-echo -e "\n${AMARILLO}[*] Inyectando dependencias (PHP, Git, API, ZIP, RAR)...${NC}"
+echo -e "\n${AMARILLO}[*] Inyectando dependencias base y multimedia...${NC}"
 export DEBIAN_FRONTEND=noninteractive
 pkg update -y -o Dpkg::Options::="--force-confold"
-pkg install -y -o Dpkg::Options::="--force-confold" git php termux-api unzip unrar
+pkg install -y -o Dpkg::Options::="--force-confold" git php termux-api unzip unrar ffmpeg php-gd
 
 echo -e "\n${AMARILLO}[*] Creando estructura de datos en Android...${NC}"
 mkdir -p /sdcard/GoldHenManager/user
@@ -42,7 +42,7 @@ else
     git clone https://github.com/Sebasbms/GoldHenManager-v3.git "$REPO_DIR"
 fi
 
-echo -e "${AMARILLO}[*] Estableciendo túnel de archivos (Symlink)...${NC}"
+echo -e "${AMARILLO}[*] Estableciendo túnel de archivos...${NC}"
 rm -rf "$REPO_DIR/user" 2>/dev/null
 ln -s /sdcard/GoldHenManager/user "$REPO_DIR/user"
 
@@ -111,6 +111,15 @@ fi
 EOF
 
 echo -e "\n${VERDE}=================================================${NC}"
-echo -e "${VERDE}  ¡INSTALACIÓN COMPLETADA!                       ${NC}"
+echo -e "${VERDE}    ¡ B I E N V E N I D O  A L  S I S T E M A !  ${NC}"
 echo -e "${VERDE}=================================================${NC}"
-echo -e "${CYAN}Cierra Termux por completo y vuélvelo a abrir para ver la magia.${NC}"
+echo -e "${CYAN}                                                 ${NC}"
+echo -e "${CYAN}  LA INSTALACIÓN SE HA COMPLETADO CON ÉXITO.     ${NC}"
+echo -e "${CYAN}                                                 ${NC}"
+echo -e "${ROJO}=================================================${NC}"
+echo -e "${ROJO}           ⚠️  ¡ I M P O R T A N T E !  ⚠️       ${NC}"
+echo -e "${ROJO}=================================================${NC}"
+echo -e "${AMARILLO}  PARA VER LA MAGIA Y APLICAR TODOS LOS CAMBIOS, ${NC}"
+echo -e "${AMARILLO}  DEBES CERRAR TERMUX POR COMPLETO Y VOLVER      ${NC}"
+echo -e "${AMARILLO}  A ABRIRLO.                                     ${NC}"
+echo -e "${ROJO}=================================================${NC}\n"
