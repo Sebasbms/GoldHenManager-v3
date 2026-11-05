@@ -4,7 +4,7 @@
  * ====================================================================
  */
 var CREATOR_ATTRIBUTION = "by SeBaS";
-console.log(`%c GOLDHEN MANAGER V3.5 - Developed ${CREATOR_ATTRIBUTION} `, "background: #111827; color: #22d3ee; font-weight: bold; padding: 4px;");
+console.log(`%c GOLDHEN MANAGER V4.0 - Developed ${CREATOR_ATTRIBUTION} `, "background: #111827; color: #22d3ee; font-weight: bold; padding: 4px;");
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').then(reg => reg.update()).catch(() => {}); });
@@ -857,24 +857,17 @@ window.conectarManual = async function(e) {
         
         window.sysNotification("ENLACE", "Comprobando conexión...", "fa-rotate");
         
-        const fetchUrl = `api/scanner.php?ip=${ip}&port=${globalAppConfig.portFTP}`;
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2500));
+        btn.innerHTML = `<i class="fa-solid fa-database fa-spin mr-2"></i> BAJANDO DB`;
         
-        let res = await Promise.race([fetch(fetchUrl), timeoutPromise]);
-        let json = await res.json();
+        let exito = await window.verificarRadarInicial();
         
-        if (json && json.status === 'success') {
-            globalAppConfig.statusConexion = true;
-            window.actualizarEstadoBotonInicio(true);
+        if (exito) {
             window.sysNotification("CONECTADO", "Sistema enlazado correctamente.", "fa-check-circle");
-            window.arrancarSincronizacionCapturasFondo();
             setTimeout(() => window.cerrarPanelConexion(), 1000);
         } else { 
             throw new Error("Offline"); 
         }
     } catch (err) {
-        globalAppConfig.statusConexion = false;
-        window.actualizarEstadoBotonInicio(false);
         window.sysNotification("DESCONECTADO", "Consola fuera de línea.", "fa-unlink");
     } finally {
         btn.innerHTML = btn.dataset.origHtml;
@@ -930,6 +923,12 @@ window.iniciarEscaneoAnimado = async function() {
                 window.playSynth('success');
                 globalAppConfig.statusConexion = true;
                 window.actualizarEstadoBotonInicio(true);
+                
+                if (typeof window.sincronizarCatalogoSilencioso === 'function') {
+                    if(log) log.innerHTML = `<span class="text-cyan-400 font-mono text-[10px]">> BAJANDO BASE DE DATOS...</span>`;
+                    await window.sincronizarCatalogoSilencioso();
+                }
+                
                 window.arrancarSincronizacionCapturasFondo();
                 setTimeout(() => { window.cerrarPanelConexion(); if(box) box.innerHTML=''; }, 2000);
                 return;
@@ -955,6 +954,12 @@ window.iniciarEscaneoAnimado = async function() {
                     
                     globalAppConfig.statusConexion = true;
                     window.actualizarEstadoBotonInicio(true);
+                    
+                    if (typeof window.sincronizarCatalogoSilencioso === 'function') {
+                        if(log) log.innerHTML = `<span class="text-cyan-400 font-mono text-[10px]">> BAJANDO BASE DE DATOS...</span>`;
+                        await window.sincronizarCatalogoSilencioso();
+                    }
+                    
                     window.arrancarSincronizacionCapturasFondo();
                     setTimeout(() => { window.cerrarPanelConexion(); if(box) box.innerHTML=''; }, 2500);
                 } else {
@@ -1009,11 +1014,18 @@ window.verificarRadarInicial = async function() {
         if (json && json.status === 'success') {
             globalAppConfig.statusConexion = true;
             window.actualizarEstadoBotonInicio(true);
+            
+            if (typeof window.sincronizarCatalogoSilencioso === 'function') {
+                await window.sincronizarCatalogoSilencioso();
+            }
+            
             window.arrancarSincronizacionCapturasFondo();
+            return true;
         } else { throw new Error("Offline"); }
     } catch (e) {
         globalAppConfig.statusConexion = false;
         window.actualizarEstadoBotonInicio(false);
+        return false;
     }
 };
 
